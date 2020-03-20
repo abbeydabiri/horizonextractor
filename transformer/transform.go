@@ -38,6 +38,11 @@ func Transform(xlFile *excelize.File) {
 		if foundSheets[sheetName] == "missing" {
 			foundSheets[sheetName] = "found"
 		}
+		println(sheetName)
+
+		// rows, _ := xlFile.GetRows(sheetName)
+		// println("rows:", len(rows))
+
 	}
 
 	for sheet, value := range foundSheets {
@@ -56,16 +61,28 @@ func Transform(xlFile *excelize.File) {
 	//transformation order is important
 
 	//first
-	transformSubdomain(xlFile)
+	// transformSubdomain(xlFile)
 
 	//second
-	transformTechnologyref(xlFile)
+	// transformTechnologyref(xlFile)
 
 	//third
-	transformSectorref(xlFile)
+	// transformSectorref(xlFile)
 
-	//fourt
-	transformSubSectorref(xlFile)
+	//fourth
+	// transformSubSectorref(xlFile)
+
+	//fifth
+	// transformTechrelevancebysector(xlFile)
+
+	//sixth
+	// transformTechrelevancebysubsector(xlFile)
+
+	//seventh
+	// transformTechvulnerabilitybysector(xlFile)
+
+	//eight
+	// transformTechvulnerabilitybysubsector(xlFile)
 
 }
 

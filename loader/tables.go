@@ -41,6 +41,7 @@ type TechnologyReferences struct {
 	ImpactAcrossSectors       int
 	MidpointOfAdoptionHorizon string `sql:"index"`
 	Vulnerability             int
+	CategoryID                int
 }
 
 //Tablename ...
@@ -73,8 +74,8 @@ func (table *SubSectorReferences) Tablename() {}
 type TechnologyRelevanceBySectors struct {
 	ID                    int `sql:"pk"`
 	Score                 int
-	TechnologyReferenceID int
 	SectorReferenceID     int
+	TechnologyReferenceID int
 }
 
 //Tablename ...
@@ -82,8 +83,8 @@ func (table *TechnologyRelevanceBySectors) Tablename() {}
 
 //TechnologyRelevanceBySubSectors table
 type TechnologyRelevanceBySubSectors struct {
-	ID                    int    `sql:"pk"`
-	Score                 string `sql:"index"`
+	ID                    int `sql:"pk"`
+	Score                 int
 	TechnologyReferenceID int
 	SubSectorReferenceID  int
 }
@@ -112,3 +113,13 @@ type TechnologyVulnerabilityBySubSectors struct {
 
 //Tablename ...
 func (table *TechnologyVulnerabilityBySubSectors) Tablename() {}
+
+//Readiness table
+type Readiness struct {
+	ID     int
+	Period string
+	Score  int
+}
+
+//Tablename ...
+func (table *Readiness) Tablename() {}

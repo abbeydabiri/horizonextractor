@@ -21,10 +21,10 @@ func transformSubSectorref(xlFile *excelize.File) {
 		log.Fatal(err.Error())
 	}
 
-	tableListSubSectorReferences := []loader.SubSectorReferences{}
+	// tableListSubSectorReferences := []loader.SubSectorReferences{}
 	for id := range rows {
 		cellRow := fmt.Sprintf("%v", id+1)
-		if getCellValue(xlFile, sheetSectoraggregate, "A"+cellRow) == "" || id == 0 || id == 1 {
+		if getCellValue(xlFile, sheetSectorreferences, "A"+cellRow) == "" || id == 0 || id == 1 {
 			continue
 		}
 
@@ -39,8 +39,8 @@ func transformSubSectorref(xlFile *excelize.File) {
 
 		//create Record
 		refSubSectorrefID[refKeySubSector] = curRow.ID
-		tableListSubSectorReferences = append(tableListSubSectorReferences, curRow)
+		// tableListSubSectorReferences = append(tableListSubSectorReferences, curRow)
 	}
-	fmt.Printf("tableListSubSectorReferences: %+v", tableListSubSectorReferences[0])
+	// fmt.Printf("tableListSubSectorReferences: %+v", tableListSubSectorReferences[0])
 
 }

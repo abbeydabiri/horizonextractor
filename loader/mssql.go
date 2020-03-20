@@ -26,11 +26,19 @@ func Connect(host, port, user, pass, db string) {
 	}
 
 	//SQL Connection for MSSQL
-	conn := "sqlserver://%s:%s@%s:%s/instance?database=%s"
-	conn = fmt.Sprintf(conn, user, pass, host, port, db)
+	// conn := "mssql://%s:%s@%s:%s/instance?database=%s"
+	conn := "server=%s;user id=%s;password=%s;database=%s"
+	conn = fmt.Sprintf(conn, host, user, pass, db)
 
 	var err error
-	MSSQL, err = sqlx.Open("sqlserver", conn)
+	MSSQL, err = sqlx.Open("mssql", conn)
+	if err != nil {
+		sMsg := "Error Connecting Database: " + err.Error()
+		fmt.Println(sMsg)
+		log.Printf(sMsg)
+		return
+	}
+
 	err = MSSQL.Ping()
 	sMsg := "Connecting To  Database.."
 	fmt.Println(sMsg)
