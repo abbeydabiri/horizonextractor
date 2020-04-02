@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/abbeydabiri/horizonextractor/loader"
 )
 
 const sheetDisruptivecompanies = "Disruptive companies"
@@ -29,8 +30,10 @@ var foundSheets = map[string]string{
 	sheetVulnerabilityscoring:      "missing",
 }
 
+var importID int
+
 //Transform extracts the sheets and their details
-func Transform(xlFile *excelize.File) {
+func Transform(sFile string, xlFile *excelize.File) {
 
 	lMissing := false
 	for iSheet := 1; iSheet <= xlFile.SheetCount; iSheet++ {
@@ -38,7 +41,7 @@ func Transform(xlFile *excelize.File) {
 		if foundSheets[sheetName] == "missing" {
 			foundSheets[sheetName] = "found"
 		}
-		println(sheetName)
+		// println(sheetName)
 
 		// rows, _ := xlFile.GetRows(sheetName)
 		// println("rows:", len(rows))
@@ -60,29 +63,49 @@ func Transform(xlFile *excelize.File) {
 
 	//transformation order is important
 
-	//first
-	// transformSubdomain(xlFile)
+	curRow := loader.Import{}
+	curRow.Filename = sFile
 
-	//second
-	// transformTechnologyref(xlFile)
+	//create Record
+	sqlInsert, sqlParams := loader.Insert(&curRow, loader.ToMap(&curRow))
+	if err := loader.MSSQL.Get(&curRow.ID, sqlInsert, sqlParams...); err != nil {
+		log.Println(err.Error())
+	}
+	importID = curRow.ID
+
+	fmt.Printf("\nExtraction - Process\n")
+
+	//first
+	fmt.Printf("\nextracting-transforming-loading: transformSubdomain\n")
+	transformSubdomain(xlFile)
+
+	// second
+	fmt.Printf("\nextracting-transforming-loading: transformTechnologyref\n")
+	transformTechnologyref(xlFile)
 
 	//third
-	// transformSectorref(xlFile)
+	fmt.Printf("\nextracting-transforming-loading: transformSectorref\n")
+	transformSectorref(xlFile)
 
 	//fourth
-	// transformSubSectorref(xlFile)
+	fmt.Printf("\nextracting-transforming-loading: transformSubSectorref\n")
+	transformSubSectorref(xlFile)
 
 	//fifth
-	// transformTechrelevancebysector(xlFile)
+	fmt.Printf("\nextracting-transforming-loading: transformTechrelevancebysector\n")
+	transformTechrelevancebysector(xlFile)
 
 	//sixth
-	// transformTechrelevancebysubsector(xlFile)
+	fmt.Printf("\nextracting-transforming-loading: transformTechrelevancebysubsector\n")
+	transformTechrelevancebysubsector(xlFile)
 
 	//seventh
-	// transformTechvulnerabilitybysector(xlFile)
+	fmt.Printf("\nextracting-transforming-loading: transformTechvulnerabilitybysector\n")
+	transformTechvulnerabilitybysector(xlFile)
 
 	//eight
-	// transformTechvulnerabilitybysubsector(xlFile)
+	fmt.Printf("\nextracting-transforming-loading: transformTechvulnerabilitybysubsector\n")
+	transformTechvulnerabilitybysubsector(xlFile)
 
 }
 

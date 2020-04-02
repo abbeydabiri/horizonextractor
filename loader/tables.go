@@ -7,29 +7,31 @@ type Tables interface {
 
 var sqlTypes = map[string]string{
 	"bool":    "bool",
-	"time":    "timestamp",
+	"time":    "datetime",
 	"string":  "text",
 	"int":     "int",
 	"uint":    "int",
-	"int64":   "int8",
-	"uint32":  "int8",
-	"uint64":  "int8",
-	"float32": "float8",
-	"float64": "float8",
+	"int64":   "int",
+	"uint32":  "int",
+	"uint64":  "int",
+	"float32": "float",
+	"float64": "float",
 }
 
 //SubDomainReferences table
 type SubDomainReferences struct {
-	ID     int    `sql:"pk"`
+	Fields
 	Domain string `sql:"index"`
 }
 
 //Tablename ...
-func (table *SubDomainReferences) Tablename() {}
+func (table *SubDomainReferences) Tablename() string {
+	return "SubDomainReferences"
+}
 
 //TechnologyReferences table
 type TechnologyReferences struct {
-	ID                        int    `sql:"pk"`
+	Fields
 	TechnologyReferenceNumber string `sql:"index"`
 	DisruptorName             string `sql:"index"`
 	VendorPresence            int
@@ -45,22 +47,26 @@ type TechnologyReferences struct {
 }
 
 //Tablename ...
-func (table *TechnologyReferences) Tablename() {}
+func (table *TechnologyReferences) Tablename() string {
+	return "TechnologyReferences"
+}
 
 //SectorReferences table ...(fetched sector aggregate)
 type SectorReferences struct {
-	ID                    int `sql:"pk"`
+	Fields
 	SectorReferenceNumber string
 	Name                  string `sql:"index"`
 	AverageSectorImpact   float64
 }
 
 //Tablename ...
-func (table *SectorReferences) Tablename() {}
+func (table *SectorReferences) Tablename() string {
+	return "SectorReferences"
+}
 
 //SubSectorReferences table
 type SubSectorReferences struct {
-	ID                       int    `sql:"pk"`
+	Fields
 	Name                     string `sql:"index"`
 	SubSectorReferenceNumber string `sql:"index"`
 	ImpactScore              int
@@ -68,58 +74,85 @@ type SubSectorReferences struct {
 }
 
 //Tablename ...
-func (table *SubSectorReferences) Tablename() {}
+func (table *SubSectorReferences) Tablename() string {
+	return "SubSectorReferences"
+}
 
 //TechnologyRelevanceBySectors table
 type TechnologyRelevanceBySectors struct {
-	ID                    int `sql:"pk"`
+	Fields
 	Score                 int
 	SectorReferenceID     int
 	TechnologyReferenceID int
 }
 
 //Tablename ...
-func (table *TechnologyRelevanceBySectors) Tablename() {}
+func (table *TechnologyRelevanceBySectors) Tablename() string {
+	return "TechnologyRelevanceBySectors"
+}
 
 //TechnologyRelevanceBySubSectors table
 type TechnologyRelevanceBySubSectors struct {
-	ID                    int `sql:"pk"`
+	Fields
 	Score                 int
 	TechnologyReferenceID int
 	SubSectorReferenceID  int
 }
 
 //Tablename ...
-func (table *TechnologyRelevanceBySubSectors) Tablename() {}
+func (table *TechnologyRelevanceBySubSectors) Tablename() string {
+	return "TechnologyRelevanceBySubSectors"
+}
 
 //TechnologyVulnerabilityBySectors table
 type TechnologyVulnerabilityBySectors struct {
-	ID                    int `sql:"pk"`
+	Fields
 	Score                 int
 	TechnologyReferenceID int
 	SectorReferenceID     int
 }
 
 //Tablename ...
-func (table *TechnologyVulnerabilityBySectors) Tablename() {}
+func (table *TechnologyVulnerabilityBySectors) Tablename() string {
+	return "TechnologyVulnerabilityBySectors"
+}
 
 //TechnologyVulnerabilityBySubSectors table
 type TechnologyVulnerabilityBySubSectors struct {
-	ID                    int
+	Fields
 	Score                 int
 	TechnologyReferenceID int
 	SubSectorReferenceID  int
 }
 
 //Tablename ...
-func (table *TechnologyVulnerabilityBySubSectors) Tablename() {}
+func (table *TechnologyVulnerabilityBySubSectors) Tablename() string {
+	return "TechnologyVulnerabilityBySubSectors"
+}
 
 //Readiness table
 type Readiness struct {
-	ID     int
-	Period string
-	Score  int
+	Fields
+	Score                 int
+	Period                string
+	SubDomainReferenceID  int
+	TechnologyReferenceID int
 }
 
 //Tablename ...
-func (table *Readiness) Tablename() {}
+func (table *Readiness) Tablename() string {
+	return "Readiness"
+}
+
+//Import table
+type Import struct {
+	Fields
+	Period, Doctype,
+	Filename, Filemeta, Filetype,
+	Filepath string
+}
+
+//Tablename ...
+func (table *Import) Tablename() string {
+	return "Import"
+}

@@ -46,13 +46,18 @@ func transformTechrelevancebysector(xlFile *excelize.File) {
 		refKeyTechnology := strings.ToLower(strings.TrimSpace(getCellValue(xlFile, sheetTechrelevancebysector, "A"+cellRow)))
 		for _, refKeySector := range sectorList {
 			curRow := loader.TechnologyRelevanceBySectors{}
-
+			curRow.ImportID = importID
 			sChar := sectorCellMap[refKeySector]
 			curRow.Score, _ = strconv.Atoi(getCellValue(xlFile, sheetTechrelevancebysector, sChar+cellRow))
 			curRow.SectorReferenceID = refSectorrefID[refKeySector]
 			curRow.TechnologyReferenceID = refTechnologyrefID[refKeyTechnology]
 
 			//create Record
+			sqlInsert, sqlParams := loader.Insert(&curRow, loader.ToMap(&curRow))
+			if err := loader.MSSQL.Get(&curRow.ID, sqlInsert, sqlParams...); err != nil {
+				log.Println(err.Error())
+			}
+
 			// tableListTechnologyRelevanceBySectors = append(tableListTechnologyRelevanceBySectors, curRow)
 		}
 	}

@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"reflect"
@@ -16,19 +17,28 @@ var MSSQL *sqlx.DB
 //Connected is used to confirm data connectivity
 var Connected bool
 
+var dbname string
+
 //Connect to the MSSQL database
-func Connect(host, port, user, pass, db string) {
-	if host == "" || port == "" || user == "" || pass == "" || db == "" {
-		sMsg := "mssql connection not set"
+func Connect(server, db, user, pass string) {
+	if server == "" || db == "" {
+		sMsg := "sql server and db not set"
 		fmt.Println(sMsg)
 		log.Printf(sMsg)
 		return
 	}
 
+	dbname = db
+	conn := "server=%s;database=%s"
+
 	//SQL Connection for MSSQL
-	// conn := "mssql://%s:%s@%s:%s/instance?database=%s"
-	conn := "server=%s;user id=%s;password=%s;database=%s"
-	conn = fmt.Sprintf(conn, host, user, pass, db)
+	if user == "" || pass == "" {
+		conn += ";trusted_connection=yes"
+		conn = fmt.Sprintf(conn, server, db)
+	} else {
+		conn += ";user id=%s;password=%s"
+		conn = fmt.Sprintf(conn, server, db, user, pass)
+	}
 
 	var err error
 	MSSQL, err = sqlx.Open("mssql", conn)
@@ -45,7 +55,7 @@ func Connect(host, port, user, pass, db string) {
 	log.Printf(sMsg)
 
 	if err != nil {
-		sMsg := "Error Connecting Database: " + err.Error()
+		sMsg := conn + " -|- Error Connecting Database: " + err.Error()
 		fmt.Println(sMsg)
 		log.Printf(sMsg)
 		return
@@ -59,23 +69,31 @@ func Connect(host, port, user, pass, db string) {
 func Create(table Tables) string {
 	reflectType := reflect.TypeOf(table).Elem()
 	tablename := strings.ToLower(reflectType.Name())
-	sqlDrop := "drop table " + tablename
+	// sqlDrop := "drop table " + tablename
+	// MSSQL.Exec(sqlDrop)
 
-	sqlIndex := ""
-	sqlCreate := "create table " + tablename + " ("
-	sqlCreate, sqlIndex = createFields(reflectType, tablename, sqlCreate, sqlIndex)
-	sqlCreate = strings.TrimSuffix(sqlCreate, ", ") + "); "
+	//check if table exists before attempting to create
+	sqlCheck := "select count(table_name) from information_schema.tables where table_type = 'BASE TABLE' and table_catalog = '%v' and table_name = '%v'"
+	sqlCheck = fmt.Sprintf(sqlCheck, dbname, tablename)
 
-	MSSQL.Exec(sqlDrop)
-	_, err := MSSQL.Exec(sqlCreate)
-	if err != nil {
-		log.Println("tablename: " + tablename + " - " + err.Error())
-	} else {
-		if sqlIndex != "" {
-			MSSQL.Exec(sqlIndex)
+	totalExists := 0
+	if MSSQL.Get(&totalExists, sqlCheck); totalExists == 0 {
+		sqlIndex := ""
+		sqlCreate := "create table " + tablename + " ("
+		sqlCreate, sqlIndex = createFields(reflectType, tablename, sqlCreate, sqlIndex)
+		sqlCreate = strings.TrimSuffix(sqlCreate, ", ") + "); "
+
+		_, err := MSSQL.Exec(sqlCreate)
+		if err != nil {
+			log.Println("tablename: " + tablename + " - " + err.Error())
+		} else {
+			if sqlIndex != "" {
+				MSSQL.Exec(sqlIndex)
+			}
 		}
+		return fmt.Sprintf("Table %s created", reflectType.Name())
 	}
-	return fmt.Sprintf("Table %s created", reflectType.Name())
+	return ""
 }
 
 //CreateFields
@@ -99,7 +117,7 @@ func createFields(reflectType reflect.Type, tablename, sqlCreate, sqlIndex strin
 			switch fieldType {
 			case "bool":
 				defaultValue = "DEFAULT false"
-			case "timestamp":
+			case "datetime":
 				defaultValue = "DEFAULT current_timestamp"
 			case "text":
 				defaultValue = "DEFAULT ''"
@@ -114,7 +132,7 @@ func createFields(reflectType reflect.Type, tablename, sqlCreate, sqlIndex strin
 		switch tag {
 		case "pk":
 			if fieldName == "id" {
-				sqlCreate += "id SERIAL PRIMARY KEY"
+				sqlCreate += "id int IDENTITY(1,1) PRIMARY KEY"
 			}
 		case "index", "unique index":
 			sqlIndex += fmt.Sprintf(indexFmt, tag, fieldName, fieldName)
@@ -125,9 +143,18 @@ func createFields(reflectType reflect.Type, tablename, sqlCreate, sqlIndex strin
 	return sqlCreate, ""
 }
 
+//ToMap ...
+func ToMap(table Tables) (mapInterface map[string]interface{}) {
+	jsonTable, _ := json.Marshal(table)
+	json.Unmarshal(jsonTable, &mapInterface)
+	return
+}
+
 //Insert  ...
 func Insert(table Tables, tableMap map[string]interface{}) (string, []interface{}) {
 	delete(tableMap, "ID")
+	delete(tableMap, "Createdate")
+	delete(tableMap, "Updatedate")
 
 	reflectType := reflect.TypeOf(table).Elem()
 	tablename := strings.ToLower(reflectType.Name())
@@ -138,12 +165,13 @@ func Insert(table Tables, tableMap map[string]interface{}) (string, []interface{
 	sqlFields, sqlValues, sqlParams = insertFields(sqlFields, sqlValues, reflectType, tableMap, sqlParams)
 
 	sqlInsert += strings.TrimSuffix(sqlFields, ", ") + " ) "
-	sqlInsert += " OUTPUT INSERTED.col1 VALUES "
-	sqlInsert += strings.TrimSuffix(sqlValues, ", ") + " ) "
+	sqlInsert += " VALUES "
+	sqlInsert += strings.TrimSuffix(sqlValues, ", ") + " ); SELECT SCOPE_IDENTITY()"
+
 	return sqlInsert, sqlParams
 }
 
-//InsertFields
+//InsertFields ...
 func insertFields(sqlFields, sqlValues string, reflectType reflect.Type,
 	tableMap map[string]interface{}, sqlParams []interface{}) (string, string, []interface{}) {
 	for i := 0; i < reflectType.NumField(); i++ {
@@ -167,6 +195,7 @@ func insertFields(sqlFields, sqlValues string, reflectType reflect.Type,
 				default:
 					sqlParams = append(sqlParams, fmt.Sprintf("%.f", tableMap[field.Name]))
 				}
+
 			default:
 				sqlParams = append(sqlParams, tableMap[field.Name])
 			}

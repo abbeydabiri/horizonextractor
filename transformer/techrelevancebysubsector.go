@@ -18,8 +18,8 @@ func transformTechrelevancebysubsector(xlFile *excelize.File) {
 		log.Fatal(err.Error())
 	}
 
-	var sectorList []string
-	sectorCellMap := make(map[string]string)
+	var subSectorList []string
+	subSectorCellMap := make(map[string]string)
 	// tableListTechnologyRelevanceBySubSectors := []loader.TechnologyRelevanceBySubSectors{}
 	for id, cols := range rows {
 		cellRow := fmt.Sprintf("%v", id+1)
@@ -47,13 +47,13 @@ func transformTechrelevancebysubsector(xlFile *excelize.File) {
 
 				nCurIndex := colIndex % 26
 
-				sectorKey := strings.ToLower(strings.TrimSpace(colValue))
-				sectorList = append(sectorList, sectorKey)
+				subSectorKey := strings.ToLower(strings.TrimSpace(colValue))
+				subSectorList = append(subSectorList, subSectorKey)
 
 				if iPreChar != 0 {
-					sectorCellMap[sectorKey] = string(iPreChar) + string(iChar+nCurIndex)
+					subSectorCellMap[subSectorKey] = string(iPreChar) + string(iChar+nCurIndex)
 				} else {
-					sectorCellMap[sectorKey] = string(iChar + nCurIndex)
+					subSectorCellMap[subSectorKey] = string(iChar + nCurIndex)
 				}
 			}
 		}
@@ -63,14 +63,19 @@ func transformTechrelevancebysubsector(xlFile *excelize.File) {
 		}
 
 		refKeyTechnology := strings.ToLower(strings.TrimSpace(getCellValue(xlFile, sheetRelevancescoring, "A"+cellRow)))
-		for _, refKeySector := range sectorList {
+		for _, refKeySubSector := range subSectorList {
 			curRow := loader.TechnologyRelevanceBySubSectors{}
-
-			sChar := sectorCellMap[refKeySector]
+			curRow.ImportID = importID
+			sChar := subSectorCellMap[refKeySubSector]
 			curRow.Score, _ = strconv.Atoi(getCellValue(xlFile, sheetRelevancescoring, sChar+cellRow))
-			curRow.SubSectorReferenceID = refSectorrefID[refKeySector]
+			curRow.SubSectorReferenceID = refSubSectorrefID[refKeySubSector]
 			curRow.TechnologyReferenceID = refTechnologyrefID[refKeyTechnology]
 			//create Record
+			sqlInsert, sqlParams := loader.Insert(&curRow, loader.ToMap(&curRow))
+			if err := loader.MSSQL.Get(&curRow.ID, sqlInsert, sqlParams...); err != nil {
+				log.Println(err.Error())
+			}
+
 			// tableListTechnologyRelevanceBySubSectors = append(tableListTechnologyRelevanceBySubSectors, curRow)
 		}
 	}

@@ -30,12 +30,18 @@ func transformSectorref(xlFile *excelize.File) {
 		refKeySector := strings.ToLower(strings.TrimSpace(getCellValue(xlFile, sheetSectoraggregate, "A"+cellRow)))
 
 		curRow := loader.SectorReferences{}
+		curRow.ImportID = importID
 		curRow.SectorReferenceNumber = getCellValue(xlFile, sheetSectoraggregate, "A"+cellRow)
 		curRow.Name = getCellValue(xlFile, sheetSectoraggregate, "B"+cellRow)
 		curRow.AverageSectorImpact, err = strconv.ParseFloat(getCellValue(xlFile, sheetSectoraggregate, "C"+cellRow), 64)
 
 		//create Record
+		sqlInsert, sqlParams := loader.Insert(&curRow, loader.ToMap(&curRow))
+		if err := loader.MSSQL.Get(&curRow.ID, sqlInsert, sqlParams...); err != nil {
+			log.Println(err.Error())
+		}
 		refSectorrefID[refKeySector] = curRow.ID
+
 		// tableListSectorReferences = append(tableListSectorReferences, curRow)
 	}
 	// fmt.Printf("tableListSectorReferences: %+v", tableListSectorReferences[0])

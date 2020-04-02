@@ -2,8 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/abbeydabiri/horizonextractor/extractor"
 	"github.com/abbeydabiri/horizonextractor/loader"
@@ -11,13 +13,12 @@ import (
 )
 
 func main() {
-	var sFile, sHost, sPort, sUser, sPass, sDB string
+	var sFile, sServer, sDB, sUser, sPass string
 	flag.StringVar(&sFile, "file", "", "horizon tool excel file")
-	flag.StringVar(&sHost, "host", "", "database host or ip")
-	flag.StringVar(&sPort, "port", "", "port number")
+	flag.StringVar(&sServer, "server", "", "database server")
+	flag.StringVar(&sDB, "db", "", "database name")
 	flag.StringVar(&sUser, "user", "", "username")
 	flag.StringVar(&sPass, "pass", "", "password")
-	flag.StringVar(&sDB, "db", "", "database name")
 	flag.Parse()
 
 	sLog := "extractorlog.log"
@@ -31,12 +32,29 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile)
 	log.SetOutput(fLog)
 
-	loader.Connect(sHost, sPort, sUser, sPass, sDB)
+	go func() {
+		ticker := time.Tick(time.Second)
+		for i := 1; i != 0; i++ {
+			<-ticker
+			fmt.Printf("\r %d seconds elapsed", i)
+		}
+	}()
+
+	loader.Connect(sServer, sDB, sUser, sPass)
+	if !loader.Connected {
+		log.Fatal("Unable to Connect to DB")
+		fmt.Println("Unable to Connect to DB")
+		return
+	}
+	loader.Init()
+
 	xFile, err := extractor.Extract(sFile)
 	if err != nil {
 		return
 	}
 
-	transformer.Transform(xFile)
-
+	transformer.Transform(sFile, xFile)
+	sMsg := "\nExtract, Transform and Load completed - pls check records "
+	fmt.Println(sMsg)
+	log.Printf(sMsg)
 }

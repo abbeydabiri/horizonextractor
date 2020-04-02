@@ -32,13 +32,19 @@ func transformSubSectorref(xlFile *excelize.File) {
 		refKeySubSector := strings.ToLower(strings.TrimSpace(getCellValue(xlFile, sheetSectorreferences, "C"+cellRow)))
 
 		curRow := loader.SubSectorReferences{}
+		curRow.ImportID = importID
 		curRow.Name = getCellValue(xlFile, sheetSectorreferences, "D"+cellRow)
 		curRow.SubSectorReferenceNumber = getCellValue(xlFile, sheetSectorreferences, "C"+cellRow)
 		curRow.ImpactScore, _ = strconv.Atoi(getCellValue(xlFile, sheetSectorreferences, "E"+cellRow))
 		curRow.SectorReferenceID = refSectorrefID[refKeySector]
 
 		//create Record
+		sqlInsert, sqlParams := loader.Insert(&curRow, loader.ToMap(&curRow))
+		if err := loader.MSSQL.Get(&curRow.ID, sqlInsert, sqlParams...); err != nil {
+			log.Println(err.Error())
+		}
 		refSubSectorrefID[refKeySubSector] = curRow.ID
+
 		// tableListSubSectorReferences = append(tableListSubSectorReferences, curRow)
 	}
 	// fmt.Printf("tableListSubSectorReferences: %+v", tableListSubSectorReferences[0])

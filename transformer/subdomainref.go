@@ -40,10 +40,18 @@ func transformSubdomain(xlFile *excelize.File) {
 	// tableListSubdomains := []loader.SubDomainReferences{}
 	for mapValue := range subdomainMap {
 		curRow := loader.SubDomainReferences{}
+		curRow.ImportID = importID
 		curRow.Domain = strings.Title(mapValue)
 
 		//create Record
+		sqlInsert, sqlParams := loader.Insert(&curRow, loader.ToMap(&curRow))
+		if err := loader.MSSQL.Get(&curRow.ID, sqlInsert, sqlParams...); err != nil {
+			log.Println(sqlInsert)
+			log.Println(sqlParams)
+			log.Println(err.Error())
+		}
 		refSubdomainID[mapValue] = curRow.ID
+
 		// tableListSubdomains = append(tableListSubdomains, curRow)
 	}
 	// fmt.Printf("tableListSubdomains: %+v", tableListSubdomains)
